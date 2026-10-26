@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sheet Metal Bend Calculator</title>
+<style>
+:root{--bg:#eef1f4;--card:#fff;--ink:#16212c;--mut:#566574;--line:#d3dae2;--acc:#0b6b73;--acc2:#e3f1f2;--warn:#8a5200;--warnbg:#fff3dc;--err:#a8231b;--errbg:#fdeceb;--part:#cfe2f3;--pline:#1f5d8c;--bend:#f3c872;--field:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e151d;--card:#16202b;--ink:#e5ecf3;--mut:#9aabbc;--line:#2a3846;--acc:#52c2cb;--acc2:#12303a;--warn:#f0b45a;--warnbg:#3a2c12;--err:#ff8a80;--errbg:#3c1a18;--part:#23425c;--pline:#7db8ec;--bend:#7d6428;--field:#0e1822;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e151d;--card:#16202b;--ink:#e5ecf3;--mut:#9aabbc;--line:#2a3846;--acc:#52c2cb;--acc2:#12303a;--warn:#f0b45a;--warnbg:#3a2c12;--err:#ff8a80;--errbg:#3c1a18;--part:#23425c;--pline:#7db8ec;--bend:#7d6428;--field:#0e1822;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:20px 14px 40px}
+.wrap{max-width:1080px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+h1{font-size:1.5rem;margin:0;font-weight:650;letter-spacing:-.01em}
+header p{margin:2px 0 0;color:var(--mut);font-size:.9rem}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.tabs button{background:none;border:0;border-bottom:3px solid transparent;color:var(--mut);padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+.tabs button[aria-selected=true]{color:var(--acc);border-color:var(--acc)}
+.pane[hidden]{display:none}
+.grid{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:16px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+.card h2{font-size:1rem;margin:0 0 12px;font-weight:650}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:block;font-size:.8rem;font-weight:600;color:var(--mut);margin:0 0 3px}
+.f{margin-bottom:10px}
+input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--ink);font:inherit;font-variant-numeric:tabular-nums}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.hint{font-size:.75rem;color:var(--mut);margin-top:3px}
+.flat{background:var(--acc2);border-radius:8px;padding:14px 16px;margin-bottom:12px}
+.flat span{font-size:.8rem;color:var(--mut);font-weight:600}
+.flat b{display:block;font-size:2rem;line-height:1.15;font-variant-numeric:tabular-nums;color:var(--acc)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.stat span{display:block;font-size:.75rem;color:var(--mut)}
+.stat b{font-variant-numeric:tabular-nums;font-weight:650}
+.msgs{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+.msgs li{padding:8px 10px;border-radius:6px;font-size:.85rem}
+.msgs .w{background:var(--warnbg);color:var(--warn)}
+.msgs .e{background:var(--errbg);color:var(--err)}
+.btn{margin-top:12px;background:var(--acc);color:var(--card);border:0;border-radius:6px;padding:9px 14px;font:inherit;font-weight:600;cursor:pointer}
+.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:16px}
+svg{width:100%;height:auto;display:block}
+svg .tx{font:11px system-ui,sans-serif;fill:var(--mut)}
+svg .tb{font-weight:600;fill:var(--ink)}
+svg .dl{stroke:var(--mut);stroke-width:1;fill:none}
+svg .part{fill:var(--part);stroke:var(--pline);stroke-width:1.5;stroke-linejoin:round}
+svg .bz{fill:var(--bend);stroke:var(--pline);stroke-width:1.5}
+svg .vs{stroke:var(--err);stroke-width:1;stroke-dasharray:5 4;fill:none}
+svg .cl{stroke:var(--err);stroke-width:1;stroke-dasharray:9 3 2 3}
+.cap{font-size:.78rem;color:var(--mut);margin:6px 0 0}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-weight:600;font-size:.8rem}
+.scroll{overflow-x:auto}
+code{background:var(--acc2);padding:1px 5px;border-radius:4px;font-size:.85em}
+.ref p,.ref li{max-width:75ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div><h1>Sheet metal bend calculator</h1><p>Bend allowance, bend deduction and flat length for a single bend.</p></div>
+  <div style="min-width:130px"><label for="unit">Units</label><select id="unit"><option value="mm">Millimetres</option><option value="in">Inches</option></select></div>
+</header>
+<div class="tabs" role="tablist">
+  <button role="tab" aria-selected="true" data-p="calc">Calculator</button>
+  <button role="tab" aria-selected="false" data-p="multi">Multi-bend</button>
+  <button role="tab" aria-selected="false" data-p="ref">Reference</button>
+</div>
+
+<section id="calc" class="pane">
+<div class="grid">
+  <div class="card">
+    <h2>Inputs</h2>
+    <div class="f"><label for="mat">Material</label><select id="mat"></select></div>
+    <div class="row">
+      <div class="f"><label for="t">Thickness t (<span class="u">mm</span>)</label><input id="t" type="number" inputmode="decimal" value="2" step="any" min="0"></div>
+      <div class="f"><label for="R">Inside radius R (<span class="u">mm</span>)</label><input id="R" type="number" inputmode="decimal" value="3" step="any" min="0"></div>
+    </div>
+    <div class="row">
+      <div class="f"><label for="ang">Bend angle θ (°)</label><input id="ang" type="number" inputmode="decimal" value="90" step="any" min="0" max="179"><div class="hint">Angle turned from flat. A right‑angle bend is 90°.</div></div>
+      <div class="f"><label for="k">K‑factor</label><input id="k" type="number" inputmode="decimal" value="0.44" step="0.01" min="0.1" max="0.7"></div>
+    </div>
+    <div class="f"><label for="ksrc">K‑factor source</label>
+      <select id="ksrc"><option value="preset">Material preset</option><option value="rt">Guideline by R/t ratio</option><option value="manual">Manual entry</option></select></div>
+    <div class="f"><label for="basis">Flange dimensions measured</label>
+      <select id="basis"><option value="out">To outside virtual sharp</option><option value="in">To inside virtual sharp</option></select></div>
+    <div class="row">
+      <div class="f"><label for="A">Flange A (<span class="u">mm</span>)</label><input id="A" type="number" inputmode="decimal" value="30" step="any" min="0"></div>
+      <div class="f"><label for="B">Flange B (<span class="u">mm</span>)</label><input id="B" type="number" inputmode="decimal" value="40" step="any" min="0"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Results</h2>
+    <div class="flat"><span>Flat length (cut length)</span><b id="oFlat">—</b></div>
+    <div class="stats">
+      <div class="stat"><span>Bend allowance BA</span><b id="oBA">—</b></div>
+      <div class="stat"><span>Bend deduction BD</span><b id="oBD">—</b></div>
+      <div class="stat"><span id="sbLbl">Setback</span><b id="oSB">—</b></div>
+      <div class="stat"><span>Straight leg a</span><b id="oa">—</b></div>
+      <div class="stat"><span>Straight leg b</span><b id="ob">—</b></div>
+      <div class="stat"><span>Neutral axis radius</span><b id="oNR">—</b></div>
+      <div class="stat"><span>R / t</span><b id="oRT">—</b></div>
+      <div class="stat"><span>Included angle</span><b id="oInc">—</b></div>
+    </div>
+    <ul class="msgs" id="msgs" aria-live="polite"></ul>
+    <button class="btn" id="copy" type="button">Copy summary</button>
+  </div>
+</div>
+<div class="figs">
+  <div class="card"><h2>Flat pattern</h2><svg id="flatSvg" viewBox="0 0 420 170" role="img" aria-label="Flat pattern with bend zone"></svg>
+    <p class="cap">Shaded band is the bend zone (BA). Dash‑dot line is the bend centreline.</p></div>
+  <div class="card"><h2>Formed profile</h2><svg id="foldSvg" viewBox="0 0 420 250" role="img" aria-label="Side view of the formed part"></svg>
+    <p class="cap">Dashed red lines show the virtual sharp that flanges A and B are measured to.</p></div>
+</div>
+</section>
+
+<section id="multi" class="pane" hidden>
+<div class="grid">
+  <div class="card">
+    <h2>Profile</h2>
+    <p class="cap" id="mShared" style="margin:0 0 12px"></p>
+    <div id="mRows"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="mAdd" type="button">Add bend</button><button class="btn" id="mDel" type="button" style="background:var(--mut)">Remove last bend</button></div>
+  </div>
+  <div class="card">
+    <h2>Results</h2>
+    <div class="flat"><span>Total flat length (cut length)</span><b id="mFlat">—</b></div>
+    <div class="scroll"><table id="mTbl"></table></div>
+    <ul class="msgs" id="mMsgs" aria-live="polite"></ul>
+    <button class="btn" id="mCopy" type="button">Copy summary</button>
+  </div>
+</div>
+<div class="card" style="margin-top:16px"><h2>Flat pattern</h2><svg id="mFlatSvg" viewBox="0 0 760 165" role="img" aria-label="Flat pattern with all bend zones"></svg>
+  <p class="cap">F = flange, B = bend zone (arrow shows bend direction). Dash‑dot lines are bend centrelines. Drawn to scale.</p></div>
+<div class="card" style="margin-top:16px"><h2>Formed profile</h2><svg id="mSvg" viewBox="0 0 420 260" role="img" aria-label="Side view of the multi-bend part"></svg>
+  <p class="cap">Side view drawn to scale. Flange lengths are measured between outside virtual sharps; thickness t, radius R and K come from the Calculator tab.</p></div>
+</section>
+
+<section id="ref" class="pane ref" hidden>
+<div class="card">
+  <h2>Formulas</h2>
+  <ul>
+    <li>Bend allowance: <code>BA = θ · (π/180) · (R + K·t)</code></li>
+    <li>Outside setback: <code>OSSB = (R + t) · tan(θ/2)</code></li>
+    <li>Inside setback: <code>ISSB = R · tan(θ/2)</code></li>
+    <li>Bend deduction: <code>BD = 2 · OSSB − BA</code></li>
+    <li>Flat length: <code>L = A + B − BD</code> for outside dimensions, or <code>L = A + B − 2·ISSB + BA</code> for inside dimensions.</li>
+  </ul>
+  <p>Here θ is the angle the metal is turned through, not the included angle between the flanges. For several bends, add the straight legs and each bend’s BA.</p>
+</div>
+<div class="card" style="margin-top:16px">
+  <h2>Typical K‑factors (air bending)</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Material</th><th>K (typ.)</th><th>Density g/cm³</th><th>Tensile MPa</th></tr></thead>
+    <tbody>
+      <tr><td>Mild steel (DC01 / CR4)</td><td>0.44</td><td>7.85</td><td>270–410</td></tr>
+      <tr><td>Stainless steel 304</td><td>0.50</td><td>8.00</td><td>515–720</td></tr>
+      <tr><td>Aluminum 5052-H32</td><td>0.43</td><td>2.68</td><td>215–265</td></tr>
+      <tr><td>Copper C11000</td><td>0.45</td><td>8.94</td><td>220–260</td></tr>
+      <tr><td>Brass C26000</td><td>0.46</td><td>8.53</td><td>300–400</td></tr>
+    </tbody></table></div>
+  <p class="cap">Tensile values vary by temper and supplier; check the mill certificate.</p>
+</div>
+<div class="card" style="margin-top:16px">
+  <h2>K‑factor guideline by R/t</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Inside radius</th><th>K (starting point)</th></tr></thead>
+    <tbody><tr><td>R &lt; t</td><td>0.33</td></tr><tr><td>t ≤ R &lt; 3t</td><td>0.40</td></tr><tr><td>R ≥ 3t</td><td>0.50</td></tr></tbody></table></div>
+  <p>K depends on material, temper, grain direction, tooling and radius. Treat every value here as a starting point and confirm with a test bend before cutting production parts.</p>
+</div>
+</section>
+</div>
+
+<script>
+(function(){
+const $=i=>document.getElementById(i);
+const MAT={mild:['Mild steel (DC01 / CR4)',.44],ss:['Stainless steel 304',.50],al:['Aluminum 5052-H32',.43],cu:['Copper C11000',.45],br:['Brass C26000',.46]};
+Object.entries(MAT).forEach(([k,v])=>$('mat').add(new Option(v[0]+' (K '+v[1].toFixed(2)+')',k)));
+let unit='mm',summary='';
+const num=id=>{const v=parseFloat($(id).value);return isFinite(v)?v:NaN};
+const f=x=>x.toFixed(unit==='mm'?3:4)+' '+unit;
+const guideK=(R,t)=>{const r=R/t;return r<1?.33:r<3?.40:.50};
+
+function syncK(){
+  const s=$('ksrc').value;
+  if(s==='preset')$('k').value=MAT[$('mat').value][1].toFixed(2);
+  else if(s==='rt'){const t=num('t'),R=num('R');if(t>0&&R>=0)$('k').value=guideK(R,t).toFixed(2)}
+}
+const dim=(x1,x2,y,txt)=>'<path class="dl" d="M'+x1+' '+(y-4)+'v8M'+x2+' '+(y-4)+'v8M'+x1+' '+y+'H'+x2+'"/><text class="tx" x="'+(x1+x2)/2+'" y="'+(y+15)+'" text-anchor="middle">'+txt+'</text>';
+
+function drawFlat(a,BA,b,L){
+  const W=420,x0=30,s=(W-60)/L,y=52,h=40;
+  const xa=x0+a*s,xb=xa+BA*s,xe=x0+L*s,xc=(xa+xb)/2;
+  $('flatSvg').innerHTML=
+   '<rect class="part" x="'+x0+'" y="'+y+'" width="'+(xa-x0)+'" height="'+h+'"/>'+
+   '<rect class="bz" x="'+xa+'" y="'+y+'" width="'+(xb-xa)+'" height="'+h+'"/>'+
+   '<rect class="part" x="'+xb+'" y="'+y+'" width="'+(xe-xb)+'" height="'+h+'"/>'+
+   '<path class="cl" d="M'+xc+' '+(y-8)+'V'+(y+h+8)+'"/>'+
+   dim(x0,xe,24,'Flat length '+f(L)).replace('y="39"','y="17"')+
+   dim(x0,xa,112,'a '+f(a))+dim(xb,xe,112,'b '+f(b))+dim(xa,xb,140,'BA '+f(BA));
+}
+function drawFold(o){
+  const {a,b,R,t,th,A,B,sb,basis}=o,W=420,H=250,p=44;
+  const dx=Math.cos(th),dy=Math.sin(th),C=[a,R+t],ph=th-Math.PI/2;
+  const P=(r,e)=>[C[0]+r*Math.cos(ph)+(e?b*dx:0),C[1]+r*Math.sin(ph)+(e?b*dy:0)];
+  const pO=P(R+t,0),pI=P(R,0),eO=P(R+t,1),eI=P(R,1);
+  const yl=basis==='out'?0:t,V=[a+sb,yl],VB=[V[0]+B*dx,V[1]+B*dy];
+  const pts=[[0,0],[0,t],[a,0],[a,t],pO,pI,eO,eI,[0,yl],V,VB];
+  for(let i=0;i<=16;i++){const q=-Math.PI/2+th*i/16;pts.push([C[0]+(R+t)*Math.cos(q),C[1]+(R+t)*Math.sin(q)],[C[0]+R*Math.cos(q),C[1]+R*Math.sin(q)])}
+  const xs=pts.map(q=>q[0]),ys=pts.map(q=>q[1]);
+  const mnx=Math.min(...xs),mxx=Math.max(...xs),mny=Math.min(...ys),mxy=Math.max(...ys);
+  const s=Math.min((W-2*p)/Math.max(mxx-mnx,1e-6),(H-2*p)/Math.max(mxy-mny,1e-6));
+  const ox=(W-(mxx-mnx)*s)/2-mnx*s,oy=(H-(mxy-mny)*s)/2-mny*s;
+  const X=q=>(ox+q[0]*s).toFixed(1),Y=q=>(H-(oy+q[1]*s)).toFixed(1),T=q=>X(q)+' '+Y(q);
+  const ro=(R+t)*s,ri=R*s;
+  const d='M'+T([0,0])+'L'+T([a,0])+'A'+ro+' '+ro+' 0 0 0 '+T(pO)+'L'+T(eO)+'L'+T(eI)+'L'+T(pI)+'A'+ri+' '+ri+' 0 0 1 '+T([a,t])+'L'+T([0,t])+'Z';
+  const nx=Math.sin(th),ny=-Math.cos(th);
+  const mA=[(a+sb)/2,yl],mB=[(V[0]+VB[0])/2,(V[1]+VB[1])/2];
+  $('foldSvg').innerHTML=
+   '<path class="vs" d="M'+T([0,yl])+'L'+T(V)+'L'+T(VB)+'"/>'+
+   '<path class="part" d="'+d+'"/>'+
+   '<text class="tx tb" x="'+X(mA)+'" y="'+(+Y(mA)+(basis==='out'?18:-10))+'" text-anchor="middle">A</text>'+
+   '<text class="tx tb" x="'+(+X(mB)+22*nx*(basis==='out'?1:-1))+'" y="'+(+Y(mB)-22*ny*(basis==='out'?1:-1)+4)+'" text-anchor="middle">B</text>'+
+   '<text class="tx" x="12" y="'+(H-12)+'">θ = '+(th*180/Math.PI).toFixed(1)+'°   R = '+R+'   t = '+t+'</text>';
+}
+function out(id,v){$(id).textContent=v}
+function blank(){['oFlat','oBA','oBD','oSB','oa','ob','oNR','oRT','oInc'].forEach(i=>out(i,'—'));$('flatSvg').innerHTML='';$('foldSvg').innerHTML='';summary=''}
+
+function run(){
+  syncK();
+  const t=num('t'),R=num('R'),ang=num('ang'),A=num('A'),B=num('B'),k=num('k'),basis=$('basis').value;
+  const m=[],bad=[];
+  if(!(t>0))bad.push('Enter a thickness greater than 0.');
+  if(!(R>=0))bad.push('Enter an inside radius of 0 or more.');
+  if(!(ang>0&&ang<180))bad.push('Enter a bend angle between 0° and 180°.');
+  if(!(k>=.1&&k<=.7))bad.push('Enter a K-factor between 0.1 and 0.7 (typically 0.30–0.50).');
+  if(!(A>0&&B>0))bad.push('Enter flange dimensions greater than 0.');
+  $('sbLbl').textContent=basis==='out'?'Outside setback':'Inside setback';
+  if(bad.length){blank();$('msgs').innerHTML=bad.map(x=>'<li class="e">'+x+'</li>').join('');return}
+  const th=ang*Math.PI/180,BA=th*(R+k*t),ossb=(R+t)*Math.tan(th/2),BD=2*ossb-BA;
+  const sb=basis==='out'?ossb:R*Math.tan(th/2),a=A-sb,b=B-sb,L=a+BA+b;
+  out('oBA',f(BA));out('oBD',f(BD));out('oSB',f(sb));out('oa',f(a));out('ob',f(b));
+  out('oNR',f(R+k*t));out('oRT',(R/t).toFixed(2));out('oInc',(180-ang).toFixed(1)+'°');
+  if(a<=0||b<=0){
+    out('oFlat','—');$('flatSvg').innerHTML='';$('foldSvg').innerHTML='';summary='';
+    m.push(['e','A flange is shorter than the bend setback, so the geometry is not valid. Increase A or B, or reduce R, t or θ.']);
+  }else{
+    out('oFlat',f(L));drawFlat(a,BA,b,L);drawFold({a,b,R,t,th,A,B,sb,basis});
+    if(a<4*t||b<4*t)m.push(['w','A straight leg is under 4 × thickness. This may be shorter than the minimum flange for common tooling; check with your press brake setup.']);
+    summary=['Flat length: '+f(L),'BA: '+f(BA),'BD: '+f(BD),'t = '+t+' '+unit+', R = '+R+' '+unit+', θ = '+ang+'°, K = '+k.toFixed(2),'A = '+A+' '+unit+', B = '+B+' '+unit+' ('+(basis==='out'?'outside':'inside')+' dimensions)'].join('\n');
+  }
+  if(R<t)m.push(['w','Inside radius is smaller than thickness (R/t = '+(R/t).toFixed(2)+'). Cracking risk depends on material, temper and grain direction.']);
+  if(ang>135)m.push(['w','Bends beyond about 135° are usually formed in more than one operation, and K varies more at these angles.']);
+  $('msgs').innerHTML=m.map(x=>'<li class="'+x[0]+'">'+x[1]+'</li>').join('');
+}
+
+document.querySelectorAll('input,select').forEach(el=>{
+  if(el.id==='unit')return;
+  el.addEventListener('input',()=>{if(el.id==='k')$('ksrc').value='manual';run()});
+  el.addEventListener('change',run);
+});
+$('unit').addEventListener('change',function(){
+  const to=this.value,fx=to==='in'?1/25.4:25.4;
+  ['t','R','A','B'].forEach(i=>{const v=num(i);if(isFinite(v))$(i).value=+(v*fx).toFixed(4)});
+  unit=to;segs=segs.map(v=>+(v*fx).toFixed(4));document.querySelectorAll('.u').forEach(u=>u.textContent=to);renderM();run();runM();
+});
+$('copy').addEventListener('click',async function(){
+  if(!summary)return;
+  try{await navigator.clipboard.writeText(summary);this.textContent='Copied'}catch(e){this.textContent='Copy not available'}
+  setTimeout(()=>this.textContent='Copy summary',1500);
+});
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  document.querySelectorAll('.pane').forEach(p=>p.hidden=p.id!==b.dataset.p);
+}));
+let segs=[20,40,20],bnd=[{a:90,d:1},{a:90,d:1}],msum='';
+function renderM(){
+  let h='';
+  segs.forEach((L,i)=>{
+    h+='<div class="f"><label>Flange '+(i+1)+' length (<span class="u">'+unit+'</span>)</label><input type="number" inputmode="decimal" step="any" min="0" data-s="'+i+'" value="'+L+'"></div>';
+    if(i<bnd.length)h+='<div class="row f"><div><label>Bend '+(i+1)+' angle (°)</label><input type="number" inputmode="decimal" step="any" min="0" max="179" data-a="'+i+'" value="'+bnd[i].a+'"></div><div><label>Direction</label><select data-d="'+i+'"><option value="1"'+(bnd[i].d>0?' selected':'')+'>Up</option><option value="-1"'+(bnd[i].d<0?' selected':'')+'>Down</option></select></div></div>';
+  });
+  $('mRows').innerHTML=h;
+}
+function drawM(st,info,t,R){
+  const rc=R+t/2,W=420,H=260,p=34,cm=[],pts=[[0,0]];
+  let pos=[0,0],h=0;
+  for(let i=0;i<st.length;i++){
+    const e=[pos[0]+st[i]*Math.cos(h),pos[1]+st[i]*Math.sin(h)];
+    cm.push(['L',e]);pts.push(e);pos=e;
+    if(i<info.length){
+      const b=info[i],d=b.d,c=[pos[0]-d*rc*Math.sin(h),pos[1]+d*rc*Math.cos(h)],h2=h+d*b.th;
+      for(let j=1;j<=12;j++){const q=h+d*b.th*j/12;pts.push([c[0]+d*rc*Math.sin(q),c[1]-d*rc*Math.cos(q)])}
+      const e2=[c[0]+d*rc*Math.sin(h2),c[1]-d*rc*Math.cos(h2)];
+      cm.push(['A',e2,d>0?0:1]);pos=e2;h=h2;
+    }
+  }
+  const xs=pts.map(q=>q[0]),ys=pts.map(q=>q[1]),mnx=Math.min(...xs),mxx=Math.max(...xs),mny=Math.min(...ys),mxy=Math.max(...ys);
+  const s=Math.min((W-2*p)/Math.max(mxx-mnx,1e-6),(H-2*p)/Math.max(mxy-mny,1e-6));
+  const ox=(W-(mxx-mnx)*s)/2-mnx*s,oy=(H-(mxy-mny)*s)/2-mny*s;
+  const T=q=>(ox+q[0]*s).toFixed(1)+' '+(H-(oy+q[1]*s)).toFixed(1);
+  let d='M'+T([0,0]);
+  cm.forEach(c=>{d+=c[0]==='L'?'L'+T(c[1]):'A'+(rc*s).toFixed(1)+' '+(rc*s).toFixed(1)+' 0 0 '+c[2]+' '+T(c[1])});
+  const tw=Math.max(t*s,4);
+  $('mSvg').innerHTML='<path d="'+d+'" fill="none" style="stroke:var(--pline)" stroke-width="'+(tw+3)+'" stroke-linejoin="round"/><path d="'+d+'" fill="none" style="stroke:var(--part)" stroke-width="'+tw+'" stroke-linejoin="round"/>';
+}
+function drawMF(st,info,flat){
+  const W=760,x0=24,s=(W-48)/flat,y=52,h=40;
+  let x=x0,r='';
+  st.forEach((v,i)=>{
+    const w=v*s;
+    r+='<rect class="part" x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'"/>'+(w>22?'<text class="tx tb" x="'+(x+w/2)+'" y="'+(y+h/2+4)+'" text-anchor="middle">F'+(i+1)+'</text>':'')+dim(x,x+w,112,w>70?f(v):'');
+    x+=w;
+    if(i<info.length){
+      const b=info[i],bw=b.BA*s;
+      r+='<rect class="bz" x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h+'"/><path class="cl" d="M'+(x+bw/2)+' '+(y-8)+'V'+(y+h+8)+'"/>'+(bw>30?'<text class="tx tb" x="'+(x+bw/2)+'" y="'+(y+h/2+4)+'" text-anchor="middle">B'+(i+1)+(b.d>0?'\u2191':'\u2193')+'</text>':'')+dim(x,x+bw,140,bw>70?f(b.BA):'');
+      x+=bw;
+    }
+  });
+  $('mFlatSvg').innerHTML=r+dim(x0,x0+flat*s,24,'Total flat length '+f(flat)).replace('y="39"','y="17"');
+}
+function runM(){
+  const t=num('t'),R=num('R'),k=num('k'),m=[];
+  const ms=$('mMsgs'),tb=$('mTbl'),clear=()=>{$('mFlat').textContent='—';tb.innerHTML='';$('mSvg').innerHTML='';$('mFlatSvg').innerHTML='';msum=''};
+  $('mShared').textContent='Using t = '+t+' '+unit+', R = '+R+' '+unit+' and K = '+(isFinite(k)?k.toFixed(2):'—')+' from the Calculator tab.';
+  const errs=[];
+  if(!(t>0&&R>=0&&k>=.1&&k<=.7))errs.push('Set a valid thickness, radius and K-factor on the Calculator tab.');
+  if(segs.some(v=>!(v>0)))errs.push('Every flange length must be greater than 0.');
+  if(bnd.some(b=>!(b.a>0&&b.a<180)))errs.push('Every bend angle must be between 0° and 180°.');
+  if(errs.length){clear();ms.innerHTML=errs.map(x=>'<li class="e">'+x+'</li>').join('');return}
+  const info=bnd.map(b=>{const th=b.a*Math.PI/180,sb=(R+t)*Math.tan(th/2),BA=th*(R+k*t);return{th,sb,BA,BD:2*sb-BA,d:b.d,a:b.a}});
+  const st=segs.map((L,i)=>L-(i>0?info[i-1].sb:0)-(i<info.length?info[i].sb:0));
+  const bad=st.map((v,i)=>v<=0?i+1:0).filter(Boolean);
+  if(bad.length){clear();ms.innerHTML='<li class="e">Flange '+bad.join(', ')+' is shorter than the setbacks of its neighbouring bends. Lengthen it or reduce R, t or the angles.</li>';return}
+  const flat=st.reduce((x,y)=>x+y,0)+info.reduce((x,y)=>x+y.BA,0),bd=info.reduce((x,y)=>x+y.BD,0),sum=segs.reduce((x,y)=>x+y,0);
+  $('mFlat').textContent=f(flat);
+  let r='<thead><tr><th>Part</th><th>Length</th></tr></thead><tbody>',lines=[];
+  st.forEach((v,i)=>{
+    r+='<tr><td>Flange '+(i+1)+' (straight)</td><td>'+f(v)+'</td></tr>';
+    if(i<info.length){const b=info[i];r+='<tr><td>Bend '+(i+1)+': '+b.a+'° '+(b.d>0?'up':'down')+' (BA)</td><td>'+f(b.BA)+'</td></tr>';lines.push('Bend '+(i+1)+': '+b.a+'° '+(b.d>0?'up':'down')+', BA '+f(b.BA)+', BD '+f(b.BD))}
+  });
+  r+='<tr><td><b>Total bend deduction</b></td><td><b>'+f(bd)+'</b></td></tr><tr><td>Sum of flange lengths</td><td>'+f(sum)+'</td></tr></tbody>';
+  tb.innerHTML=r;
+  if(st.some(v=>v<4*t))m.push('<li class="w">A straight leg is under 4 × thickness. Check minimum flange for your tooling.</li>');
+  if(R<t)m.push('<li class="w">Inside radius is smaller than thickness (R/t = '+(R/t).toFixed(2)+'). Cracking risk depends on material and grain direction.</li>');
+  if(info.some((b,i)=>i>0&&b.d!==info[i-1].d))m.push('<li class="w">With up/down reversals, check that each flange length is measured between outside virtual sharps. On reversing bends these lie on opposite faces, so a dimension taken on one face differs by about t.</li>');
+  ms.innerHTML=m.join('');
+  msum='Total flat length: '+f(flat)+'\nTotal BD: '+f(bd)+'\nt = '+t+' '+unit+', R = '+R+' '+unit+', K = '+k.toFixed(2)+'\nFlanges: '+segs.join(' / ')+' '+unit+'\n'+lines.join('\n');
+  drawM(st,info,t,R);drawMF(st,info,flat);
+}
+$('mRows').addEventListener('input',e=>{
+  const g=e.target.dataset,v=parseFloat(e.target.value);
+  if(g.s!==undefined)segs[g.s]=v;else if(g.a!==undefined)bnd[g.a].a=v;else if(g.d!==undefined)bnd[g.d].d=+e.target.value;
+  runM();
+});
+$('mRows').addEventListener('change',e=>{if(e.target.dataset.d!==undefined){bnd[e.target.dataset.d].d=+e.target.value;runM()}});
+$('mAdd').addEventListener('click',()=>{if(bnd.length<8){bnd.push({a:90,d:1});segs.push(20);renderM();runM()}});
+$('mDel').addEventListener('click',()=>{if(bnd.length>1){bnd.pop();segs.pop();renderM();runM()}});
+$('mCopy').addEventListener('click',async function(){
+  if(!msum)return;
+  try{await navigator.clipboard.writeText(msum);this.textContent='Copied'}catch(e){this.textContent='Copy not available'}
+  setTimeout(()=>this.textContent='Copy summary',1500);
+});
+['t','R','k','mat','ksrc'].forEach(i=>{$(i).addEventListener('input',runM);$(i).addEventListener('change',runM)});
+renderM();run();runM();
+})();
+</script>
+</body>
+</html>
