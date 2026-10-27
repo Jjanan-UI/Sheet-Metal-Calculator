@@ -30,7 +30,7 @@ This repository contains a lightweight, fully client-side web application design
 
 ## 📂 Repository Structure
 *   `/` - Contains the primary `index.html` file.
-*   `/assets` - Screenshots and favicon.
+*   `/assets` - Screenshots.
 *   `README.md` - Project documentation.
 
 ## 🚀 Getting Started
