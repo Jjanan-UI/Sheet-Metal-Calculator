@@ -1,4 +1,4 @@
-# Sheet-Metal-Calculator# Sheet Metal Bend Calculator
+# Sheet Metal Bend Calculator
 
 <img width="1122" height="1121" alt="Single Bend" src="https://github.com/user-attachments/assets/634028ba-98c2-4685-abbb-11788e004639" />
 
