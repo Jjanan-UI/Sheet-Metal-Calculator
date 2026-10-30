@@ -10,7 +10,7 @@ This repository contains a lightweight, fully client-side web application design
 | Parameter | Specification |
 | :--- | :--- |
 | **App Type** | Client-side Web Application |
-| **Tech Stack** | HTML5, CSS3, Vanilla JavaScript (Zero dependencies) |
+| **Tech Stack** | HTML5, CSS, and JavaScript |
 | **Supported Units** | Metric (mm) & Imperial (in) |
 | **Calculations** | Bend Allowance (BA), Bend Deduction (BD), Setback, Flat Length |
 | **Material Presets** | Mild Steel, Stainless Steel 304, Aluminum 5052, Copper, Brass |
